@@ -13,6 +13,13 @@ from joblib import Parallel, delayed
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.cluster import MiniBatchKMeans
+from rdkit.DataStructs.cDataStructs import ExplicitBitVect
+
+
+def get_fp_from_smi_and_fingerprint(smi):
+    smi, name, fp = smi.split()[:3]
+    return fp + "\t" + str(smi) +"\t" + str(name)
+
 
 def get_fp_from_smi(smi, r, n=1024):
     smi, name = smi.split()[:2]
@@ -22,6 +29,7 @@ def get_fp_from_smi(smi, r, n=1024):
         return fp + "\t" + str(Chem.MolToSmiles(m, isomericSmiles=True)) +"\t" + str(name)
     else:
         return None
+
 
 def arg_parser():
     parser = argparse.ArgumentParser(description='K-means clustering of large sets of compounds with intermediate PCA step. \
@@ -53,6 +61,7 @@ if __name__ == "__main__":
     out_file = '.'.join(infile.split('.')[:-1] + ['clusters.csv'])
     b_size = 100000  # 100k chunks fot pca.transform(), otherwise we get MemoryError
 
+
     # Open File
     print('Reading input smiles.')
     with gzip.open(infile, 'rt') as f:
@@ -60,7 +69,8 @@ if __name__ == "__main__":
 
     # Calculate FPs
     print('Calculating FPs.')
-    result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi)(x, args.radius, args.bit_length) for x in lines)
+    result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi_and_fingerprint)(x) for x in lines)
+    #result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi)(x, args.radius, args.bit_length) for x in lines)
 
     # Save FPs including a random sample to train the PCA
     print('Saving FPs.')
