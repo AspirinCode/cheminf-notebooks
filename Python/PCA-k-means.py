@@ -42,6 +42,7 @@ def arg_parser():
     parser.add_argument('-c', '--pca_components', default=10, help="Number of PCA components to calculate. Default: 10", type=int)
     parser.add_argument('-r', '--radius', default=1, help = "Morgan fingerprint bit radius. Default: 1", type=int)
     parser.add_argument('-b', '--bit_length', default=1024, help="Morgan fingerprint bit length. Default: 1024", type=int)
+    parser.add_argument('-f', '--fingerprints', default=False, help="Whether to use own fingerprints. Default: False", type=bool)
     return parser
 
 if __name__ == "__main__":
@@ -61,7 +62,6 @@ if __name__ == "__main__":
     out_file = '.'.join(infile.split('.')[:-1] + ['clusters.csv'])
     b_size = 100000  # 100k chunks fot pca.transform(), otherwise we get MemoryError
 
-
     # Open File
     print('Reading input smiles.')
     with gzip.open(infile, 'rt') as f:
@@ -69,8 +69,11 @@ if __name__ == "__main__":
 
     # Calculate FPs
     print('Calculating FPs.')
-    result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi_and_fingerprint)(x) for x in lines)
-    #result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi)(x, args.radius, args.bit_length) for x in lines)
+
+    if args.fingerprints:
+        result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi_and_fingerprint)(x) for x in lines)
+    else:
+        result = Parallel(n_jobs=args.jobs, verbose=1)(delayed(get_fp_from_smi)(x, args.radius, args.bit_length) for x in lines)
 
     # Save FPs including a random sample to train the PCA
     print('Saving FPs.')
